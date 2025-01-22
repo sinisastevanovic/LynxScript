@@ -4,12 +4,19 @@
 #include "value.h"
 
 typedef enum {
-	OP_CONSTANT,
+    OP_CONSTANT,
     OP_CONSTANT_LONG,
+    OP_NULL,
+    OP_TRUE,
+    OP_FALSE,
+    OP_EQUAL,
+	OP_GREATER,
+	OP_LESS, // TODO: Add less or equal etc for performance...
     OP_ADD,
 	OP_SUBTRACT,
 	OP_MULTIPLY,
 	OP_DIVIDE,
+    OP_NOT,
     OP_NEGATE,
     OP_RETURN,
 } OpCode;
