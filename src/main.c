@@ -21,16 +21,6 @@ static void repl()
 			break;
 		}
 
-		// Ensure the input ends with a newline character
-		size_t length = strlen(line);
-		if (length > 0 && line[length - 1] != '\n')
-		{
-			if (length < sizeof(line) - 1)
-			{
-				line[length] = '\n';
-				line[length + 1] = '\0';
-			}
-		}
 		interpret(line);
 	}
 }

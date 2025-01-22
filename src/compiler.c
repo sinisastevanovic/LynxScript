@@ -117,7 +117,7 @@ static void emitReturn()
 	emitByte(OP_RETURN);
 }
 
-static uint8_t makeConstant(Value value)
+static uint32_t makeConstant(Value value)
 {
 	int constant = addConstant(currentChunk(), value);
 	/*if (constant > UINT8_MAX)
@@ -125,7 +125,7 @@ static uint8_t makeConstant(Value value)
 		error("Too many constants in one chunk.");
 		return 0;
 	}*/
-	return (uint8_t)constant;
+	return (uint32_t)constant;
 }
 
 static void emitConstant(Value value)
@@ -152,6 +152,8 @@ static void binary()
 {
 	TokenType operatorType = parser.previous.type;
 	ParseRule* rule = getRule(operatorType);
+	parsePrecedence((Precedence)(rule->precedence + 1));
+
 	switch (operatorType)
 	{
 	case TOKEN_PLUS: emitByte(OP_ADD); break;
