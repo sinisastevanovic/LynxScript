@@ -7,9 +7,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-// TODO: support string maniputlation: "${drink} will be ready in ${steep + cool} minutes."
-// TODO: add ternary operator
-
 static void repl()
 {
 	char line[1024];
