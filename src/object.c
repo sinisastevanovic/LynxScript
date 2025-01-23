@@ -2,6 +2,7 @@
 #include "memory.h"
 #include "value.h"
 #include "vm.h"
+#include "table.h"
 
 #include <stdio.h>
 #include <string.h>
@@ -27,6 +28,17 @@ static Obj* allocateObject(size_t size, ObjType type)
 //	return string;
 //}
 
+static uint32_t hashString(const char* key, int length)
+{
+	uint32_t hash = 2166136261u;
+	for (int i = 0; i < length; i++)
+	{
+		hash ^= (uint8_t)key[i];
+		hash *= 16777619;
+	}
+	return hash;
+}
+
 ObjString* makeString(int length)
 {
 	ObjString* string = (ObjString*)allocateObject(sizeof(ObjString) + length + 1, OBJ_STRING);
@@ -36,9 +48,16 @@ ObjString* makeString(int length)
 
 ObjString* copyString(const char* chars, int length)
 {
+	uint32_t hash = hashString(chars, length);
+	ObjString* interned = tableFindString(&vm.strings, chars, length, hash);
+	if (interned != NULL)
+		return interned;
+
 	ObjString* string = makeString(length);
 	memcpy(string->chars, chars, length);
 	string->chars[length] = '\0';
+	string->hash = hash;
+	tableSet(&vm.strings, string, NULL_VAL);
 	return string;
 }
 

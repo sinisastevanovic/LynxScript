@@ -3,6 +3,7 @@
 #include "compiler.h"
 #include "object.h"
 #include "memory.h"
+#include "table.h"
 #ifdef DEBUG_TRACE_EXECUTION
 #include "debug.h"
 #endif
@@ -35,10 +36,12 @@ void initVM()
 {
 	resetStack();
 	vm.objects = NULL;
+	initTable(&vm.strings);
 }
 
 void freeVM()
 {
+	freeTable(&vm.strings);
 	freeObjects();
 }
 
@@ -66,17 +69,20 @@ static bool isFalsey(Value value)
 
 static void concatenate()
 {
-	ObjString* b = AS_STRING(pop());
-	ObjString* a = AS_STRING(pop());
-	
-	int length = a->length + b->length;
-	ObjString* result = makeString(length);
-	memcpy(result->chars, a->chars, a->length);
-	memcpy(result->chars + a->length, b->chars, b->length);
-	result->chars[length] = '\0';
-	
-	push(OBJ_VAL(result));
+	// TODO: test if this is correct...
+    ObjString* b = AS_STRING(pop());
+    ObjString* a = AS_STRING(pop());
+
+    int length = a->length + b->length;
+    char* chars = ALLOCATE(char, length + 1);
+    memcpy(chars, a->chars, a->length);
+    memcpy(chars + a->length, b->chars, b->length);
+
+	ObjString* result = copyString(chars, length);
+	FREE_ARRAY(char, chars, length + 1);
+    push(OBJ_VAL(result));
 }
+
 
 static InterpretResult run()
 {
