@@ -1,89 +1,71 @@
-#include <stdlib.h>
-
 #include "chunk.h"
 #include "memory.h"
 
+#include <stdlib.h>
+
+/**
+ * @brief Initalize a chunk to zero
+ * @param chunk the existing chunk to zero out
+ */
 void initChunk(Chunk* chunk) 
 {
     chunk->count = 0;
     chunk->capacity = 0;
     chunk->code = NULL;
-    chunk->lineBuff.count = 0;
-	chunk->lineBuff.capacity = 0;
-    chunk->lineBuff.lines = NULL;
-	initValueArray(&chunk->constants);
+    chunk->lines = NULL;
+    initValueArray(&chunk->constants);
 }
 
-void freeChunk(Chunk *chunk) 
+/// @brief 
+/// @param chunk 
+/// @param byte 
+/**
+ * @brief Write a byte to the chunk array, resizing if we're at capcity
+ * @param chunk chunk to append to
+ * @param byte byte to append to chunk
+ * @param line the source code line number the chunk is associated with. Used for printing where errors are.
+ */
+void writeChunk(Chunk* chunk, uint8_t byte, int line) 
 {
-    FREE_ARRAY(uint8_t, chunk->code, chunk->capacity);
-	FREE_ARRAY(LineEnc, chunk->lineBuff.lines, chunk->capacity);
-	freeValueArray(&chunk->constants);
-    initChunk(chunk);
-}
-
-void writeChunk(Chunk *chunk, uint8_t byte, int line)
-{
-    if (chunk->lineBuff.count > 0 && chunk->lineBuff.lines[chunk->lineBuff.count - 1].line == line)
+    if (chunk->capacity < chunk->count + 1) 
     {
-        chunk->lineBuff.lines[chunk->lineBuff.count - 1].count++;
-    }
-    else
-    {
-        if (chunk->lineBuff.capacity < chunk->lineBuff.count + 1) {
-            int oldCapacity = chunk->lineBuff.capacity;
-            chunk->lineBuff.capacity = GROW_CAPACITY(oldCapacity);
-            chunk->lineBuff.lines = GROW_ARRAY(LineEnc, chunk->lineBuff.lines, oldCapacity, chunk->lineBuff.capacity);
-        }
-
-        chunk->lineBuff.lines[chunk->lineBuff.count].line = line;
-        chunk->lineBuff.lines[chunk->lineBuff.count].count = 1;
-		chunk->lineBuff.count++;
-    }
-
-    if (chunk->capacity < chunk->count + 1) {
         int oldCapacity = chunk->capacity;
         chunk->capacity = GROW_CAPACITY(oldCapacity);
         chunk->code = GROW_ARRAY(uint8_t, chunk->code, oldCapacity, chunk->capacity);
+        chunk->lines = GROW_ARRAY(int, chunk->lines, oldCapacity, chunk->capacity);
     }
 
     chunk->code[chunk->count] = byte;
+    chunk->lines[chunk->count] = line;
     chunk->count++;
 }
 
-void writeConstant(Chunk* chunk, Value value, int line)
+/**
+ * @brief Add a constant number to a bytecode
+ * @param chunk The bytecode to add the constant to
+ * @param value The value to add to the bytecode
+ * @return Index of where the value was added in the chunk
+ */
+int addConstant(Chunk* chunk, Value value) 
 {
-    int index = addConstant(chunk, value);
-    if (index < 256)
-    {
-		writeChunk(chunk, OP_CONSTANT, line);
-		writeChunk(chunk, (uint8_t)index, line);
-    }
-    else
-    {
-		writeChunk(chunk, OP_CONSTANT_LONG, line);
-		writeChunk(chunk, (uint8_t)(index & 0xff), line);
-		writeChunk(chunk, (uint8_t)((index >> 8) & 0xff), line);
-		writeChunk(chunk, (uint8_t)((index >> 16) & 0xff), line);
-    }
-}
-
-int addConstant(Chunk* chunk, Value value)
-{
-	writeValueArray(&chunk->constants, value);
-	return chunk->constants.count - 1;
+    writeValueArray(&chunk->constants, value);
+    // Return the index where the constant was appended so we can located it later
+    return chunk->constants.count - 1;
 }
 
 int getLine(Chunk* chunk, int offset)
 {
-	for (int i = 0; i < chunk->lineBuff.count; i++)
-	{
-		if (offset < chunk->lineBuff.lines[i].count)
-		{
-			return chunk->lineBuff.lines[i].line;
-		}
-		offset -= chunk->lineBuff.lines[i].count;
-	}
+	return chunk->lines[offset];
+}
 
-	return -1;
+/**
+ * @brief Free a bytecode
+ * @param chunk The bytecode to free
+ */
+void freeChunk(Chunk* chunk) 
+{
+    FREE_ARRAY(uint8_t, chunk->code, chunk->capacity);
+    FREE_ARRAY(int, chunk->lines, chunk->capacity);
+    freeValueArray(&chunk->constants);
+    initChunk(chunk);
 }
