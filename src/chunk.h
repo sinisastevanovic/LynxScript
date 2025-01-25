@@ -47,6 +47,12 @@ typedef enum
     OP_METHOD
 } OpCode;
 
+typedef struct
+{
+    int line;
+    int count;
+} Line;
+
 /**
  * @brief Chunks are a sequence of bytecode
  */
@@ -54,7 +60,9 @@ typedef struct {
     int count; ///< Number of elements allocated in code array
     int capacity; ///< Maximum size of code array
     uint8_t* code; ///< The array of bytes of code
-    int* lines; ///< Array of lines to relate to source code, mirrors the code array and only stores the line number for the code
+    int linesCount;
+	int linesCapacity;
+    Line* lines; ///< Array of lines to relate to source code, mirrors the code array and only stores the line number for the code
     ValueArray constants; ///< Array of constants used for bytecode
 } Chunk;
 

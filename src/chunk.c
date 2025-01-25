@@ -14,6 +14,8 @@ void initChunk(Chunk* chunk)
     chunk->capacity = 0;
     chunk->code = NULL;
     chunk->lines = NULL;
+    chunk->linesCapacity = 0;
+	chunk->linesCount = 0;
     initValueArray(&chunk->constants);
 }
 
@@ -28,16 +30,31 @@ void initChunk(Chunk* chunk)
  */
 void writeChunk(Chunk* chunk, uint8_t byte, int line) 
 {
+    if (chunk->linesCount > 0 && chunk->lines[chunk->linesCapacity - 1].line == line)
+    {
+		chunk->lines[chunk->linesCount - 1].count++;
+	}
+    else
+    {
+        if (chunk->linesCapacity < chunk->linesCount + 1)
+        {
+            int oldCapacity = chunk->linesCapacity;
+            chunk->linesCapacity = GROW_CAPACITY(oldCapacity);
+            chunk->lines = GROW_ARRAY(Line, chunk->lines, oldCapacity, chunk->linesCapacity);
+        }
+        chunk->lines[chunk->linesCount].line = line;
+        chunk->lines[chunk->linesCount].count = 1;
+        chunk->linesCount++;
+    }
+
     if (chunk->capacity < chunk->count + 1) 
     {
         int oldCapacity = chunk->capacity;
         chunk->capacity = GROW_CAPACITY(oldCapacity);
         chunk->code = GROW_ARRAY(uint8_t, chunk->code, oldCapacity, chunk->capacity);
-        chunk->lines = GROW_ARRAY(int, chunk->lines, oldCapacity, chunk->capacity);
     }
 
     chunk->code[chunk->count] = byte;
-    chunk->lines[chunk->count] = line;
     chunk->count++;
 }
 
@@ -58,7 +75,16 @@ int addConstant(Chunk* chunk, Value value)
 
 int getLine(Chunk* chunk, int offset)
 {
-	return chunk->lines[offset];
+	int line = 0;
+	for (int i = 0; i < chunk->linesCount; i++)
+	{
+		line += chunk->lines[i].count;
+		if (line > offset)
+		{
+			return chunk->lines[i].line;
+		}
+	}
+	return 0;
 }
 
 /**
