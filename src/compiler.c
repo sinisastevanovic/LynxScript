@@ -89,7 +89,7 @@ static Chunk* currentChunk()
 
 static void errorAt(Token* token, const char* message)
 {
-	if (parser.panicMode) 
+	if (parser.panicMode)
 		return;
 	parser.panicMode = true;
 	fprintf(stderr, "[line %d] Error", token->line);
@@ -168,7 +168,7 @@ static bool check(TokenType type)
 
 static bool match(TokenType type)
 {
-	if (!check(type)) 
+	if (!check(type))
 		return false;
 	advance();
 	return true;
@@ -343,7 +343,7 @@ static uint8_t identifierConstant(Token* name)
 
 static bool identifiersEqual(Token* a, Token* b)
 {
-	if (a->length != b->length) 
+	if (a->length != b->length)
 		return false;
 	return memcmp(a->start, b->start, a->length) == 0;
 }
@@ -443,7 +443,7 @@ static void addLocal(Token name)
  */
 static void declareVariable()
 {
-	if (current->scopeDepth == 0) 
+	if (current->scopeDepth == 0)
 		return; // Break out of this for global variables. Local only!
 
 	Token* name = &parser.previous;
@@ -477,7 +477,7 @@ static uint8_t parseVariable(const char* errorMessage)
 	consume(TOKEN_IDENTIFIER, errorMessage);
 
 	declareVariable();
-	if (current->scopeDepth > 0) 
+	if (current->scopeDepth > 0)
 		return 0;
 
 	return identifierConstant(&parser.previous);
@@ -489,7 +489,7 @@ static uint8_t parseVariable(const char* errorMessage)
 static void markInitialized()
 {
 	// If called from a global function, we break early.
-	if (current->scopeDepth == 0) 
+	if (current->scopeDepth == 0)
 		return;
 	current->locals[current->localCount - 1].depth = current->scopeDepth;
 }
@@ -551,20 +551,20 @@ static void binary(bool canAssign)
 
 	switch (operatorType)
 	{
-	case TOKEN_BANG_EQUAL:      emitBytes(OP_EQUAL, OP_NOT); break;
-	case TOKEN_EQUAL_EQUAL:     emitByte(OP_EQUAL); break;
-	case TOKEN_GREATER:         emitByte(OP_GREATER); break;
-		// Since we only have EQUAL, LESS, GREATER, we're switching the logic around
-		// a >= b  === !(a < b)
-	case TOKEN_GREATER_EQUAL:   emitBytes(OP_LESS, OP_NOT); break;
-	case TOKEN_LESS:            emitByte(OP_LESS); break;
-		// a <= b === !(a > b)
-	case TOKEN_LESS_EQUAL:      emitBytes(OP_GREATER, OP_NOT); break;
-	case TOKEN_PLUS:            emitByte(OP_ADD); break;
-	case TOKEN_MINUS:           emitByte(OP_SUBTRACT); break;
-	case TOKEN_STAR:            emitByte(OP_MULTIPLY); break;
-	case TOKEN_SLASH:           emitByte(OP_DIVIDE); break;
-	default: return; // Unreachable.
+		case TOKEN_BANG_EQUAL:      emitBytes(OP_EQUAL, OP_NOT); break;
+		case TOKEN_EQUAL_EQUAL:     emitByte(OP_EQUAL); break;
+		case TOKEN_GREATER:         emitByte(OP_GREATER); break;
+			// Since we only have EQUAL, LESS, GREATER, we're switching the logic around
+			// a >= b  === !(a < b)
+		case TOKEN_GREATER_EQUAL:   emitBytes(OP_LESS, OP_NOT); break;
+		case TOKEN_LESS:            emitByte(OP_LESS); break;
+			// a <= b === !(a > b)
+		case TOKEN_LESS_EQUAL:      emitBytes(OP_GREATER, OP_NOT); break;
+		case TOKEN_PLUS:            emitByte(OP_ADD); break;
+		case TOKEN_MINUS:           emitByte(OP_SUBTRACT); break;
+		case TOKEN_STAR:            emitByte(OP_MULTIPLY); break;
+		case TOKEN_SLASH:           emitByte(OP_DIVIDE); break;
+		default: return; // Unreachable.
 	}
 }
 
@@ -574,14 +574,30 @@ static void call(bool canAssign)
 	emitBytes(OP_CALL, argCount);
 }
 
+static void dot(bool canAssign)
+{
+	consume(TOKEN_IDENTIFIER, "Expect property name after '.'.");
+	uint8_t name = identifierConstant(&parser.previous);
+
+	if (canAssign && match(TOKEN_EQUAL))
+	{
+		expression();
+		emitBytes(OP_SET_PROPERTY, name);
+	}
+	else
+	{
+		emitBytes(OP_GET_PROPERTY, name);
+	}
+}
+
 static void literal(bool canAssign)
 {
 	switch (parser.previous.type)
 	{
-	case TOKEN_FALSE: emitByte(OP_FALSE); break;
-	case TOKEN_NULL: emitByte(OP_NULL); break;
-	case TOKEN_TRUE: emitByte(OP_TRUE);
-	default: return; // Unreachable.
+		case TOKEN_FALSE: emitByte(OP_FALSE); break;
+		case TOKEN_NULL: emitByte(OP_NULL); break;
+		case TOKEN_TRUE: emitByte(OP_TRUE);
+		default: return; // Unreachable.
 	}
 }
 
@@ -667,9 +683,9 @@ static void unary(bool canAssign)
 	// Emit the operator instruction.
 	switch (operatorType)
 	{
-	case TOKEN_BANG: emitByte(OP_NOT); break;
-	case TOKEN_MINUS: emitByte(OP_NEGATE); break;
-	default: return; // Unreachable.
+		case TOKEN_BANG: emitByte(OP_NOT); break;
+		case TOKEN_MINUS: emitByte(OP_NEGATE); break;
+		default: return; // Unreachable.
 	}
 }
 
@@ -677,46 +693,46 @@ static void unary(bool canAssign)
  * @brief Table of token rules to know what prefix and infix functions to call, and what precendence they have
  */
 ParseRule rules[] = {
-	[TOKEN_LEFT_PAREN] = {grouping,  call,   PREC_CALL},
-	[TOKEN_RIGHT_PAREN] = {NULL,      NULL,   PREC_NONE},
-	[TOKEN_LEFT_BRACE] = {NULL,      NULL,   PREC_NONE},
-	[TOKEN_RIGHT_BRACE] = {NULL,      NULL,   PREC_NONE},
-	[TOKEN_COMMA] = {NULL,      NULL,   PREC_NONE},
-	[TOKEN_DOT] = {NULL,      NULL,   PREC_NONE},
-	[TOKEN_MINUS] = {unary,     binary, PREC_TERM},
-	[TOKEN_PLUS] = {NULL,      binary, PREC_TERM},
-	[TOKEN_SEMICOLON] = {NULL,      NULL,   PREC_NONE},
-	[TOKEN_SLASH] = {NULL,      binary, PREC_FACTOR},
-	[TOKEN_STAR] = {NULL,      binary, PREC_FACTOR},
-	[TOKEN_BANG] = {unary,     NULL,   PREC_NONE},
-	[TOKEN_BANG_EQUAL] = {NULL,      binary, PREC_EQUALITY},
-	[TOKEN_EQUAL] = {NULL,      NULL,   PREC_NONE},
-	[TOKEN_EQUAL_EQUAL] = {NULL,      binary, PREC_EQUALITY},
-	[TOKEN_GREATER] = {NULL,      binary, PREC_COMPARISON},
-	[TOKEN_GREATER_EQUAL] = {NULL,      binary, PREC_COMPARISON},
-	[TOKEN_LESS] = {NULL,      binary, PREC_COMPARISON},
-	[TOKEN_LESS_EQUAL] = {NULL,      binary, PREC_COMPARISON},
-	[TOKEN_IDENTIFIER] = {variable,  NULL,   PREC_NONE},
-	[TOKEN_STRING] = {string,    NULL,   PREC_NONE},
-	[TOKEN_NUMBER] = {number,    NULL,   PREC_NONE},
-	[TOKEN_AND] = {NULL,      and_,   PREC_AND},
-	[TOKEN_CLASS] = {NULL,      NULL,   PREC_NONE},
-	[TOKEN_ELSE] = {NULL,      NULL,   PREC_NONE},
-	[TOKEN_FALSE] = {literal,   NULL,   PREC_NONE},
-	[TOKEN_FOR] = {NULL,      NULL,   PREC_NONE},
-	[TOKEN_FUN] = {NULL,      NULL,   PREC_NONE},
-	[TOKEN_IF] = {NULL,      NULL,   PREC_NONE},
-	[TOKEN_NULL] = {literal,   NULL,   PREC_NONE},
-	[TOKEN_OR] = {NULL,      or_,    PREC_OR},
-	[TOKEN_PRINT] = {NULL,      NULL,   PREC_NONE},
-	[TOKEN_RETURN] = {NULL,      NULL,   PREC_NONE},
-	[TOKEN_SUPER] = {NULL,      NULL,   PREC_NONE},
-	[TOKEN_THIS] = {NULL,      NULL,   PREC_NONE},
-	[TOKEN_TRUE] = {literal,   NULL,   PREC_NONE},
-	[TOKEN_VAR] = {NULL,      NULL,   PREC_NONE},
-	[TOKEN_WHILE] = {NULL,      NULL,   PREC_NONE},
-	[TOKEN_ERROR] = {NULL,      NULL,   PREC_NONE},
-	[TOKEN_EOF] = {NULL,      NULL,   PREC_NONE},
+	[TOKEN_LEFT_PAREN] =	{ grouping,	call,		PREC_CALL },
+	[TOKEN_RIGHT_PAREN] =	{ NULL,		NULL,		PREC_NONE },
+	[TOKEN_LEFT_BRACE] =	{ NULL,		NULL,		PREC_NONE },
+	[TOKEN_RIGHT_BRACE] =	{ NULL,		NULL,		PREC_NONE },
+	[TOKEN_COMMA] =			{ NULL,		NULL,		PREC_NONE },
+	[TOKEN_DOT] =			{ NULL,		dot,		PREC_CALL },
+	[TOKEN_MINUS] =			{ unary,	binary,		PREC_TERM },
+	[TOKEN_PLUS] =			{ NULL,		binary,		PREC_TERM },
+	[TOKEN_SEMICOLON] =		{ NULL,		NULL,		PREC_NONE },
+	[TOKEN_SLASH] =			{ NULL,		binary,		PREC_FACTOR },
+	[TOKEN_STAR] =			{ NULL,		binary,		PREC_FACTOR },
+	[TOKEN_BANG] =			{ unary,	NULL,		PREC_NONE },
+	[TOKEN_BANG_EQUAL] =	{ NULL,		binary,		PREC_EQUALITY },
+	[TOKEN_EQUAL] =			{ NULL,		NULL,		PREC_NONE },
+	[TOKEN_EQUAL_EQUAL] =	{ NULL,		binary,		PREC_EQUALITY },
+	[TOKEN_GREATER] =		{ NULL,		binary,		PREC_COMPARISON },
+	[TOKEN_GREATER_EQUAL] =	{ NULL,		binary,		PREC_COMPARISON },
+	[TOKEN_LESS] =			{ NULL,		binary,		PREC_COMPARISON },
+	[TOKEN_LESS_EQUAL] =	{ NULL,     binary,		PREC_COMPARISON },
+	[TOKEN_IDENTIFIER] =	{ variable, NULL,		PREC_NONE },
+	[TOKEN_STRING] =		{ string,	NULL,		PREC_NONE },
+	[TOKEN_NUMBER] =		{ number,	NULL,		PREC_NONE },
+	[TOKEN_AND] =			{ NULL,		and_,		PREC_AND },
+	[TOKEN_CLASS] =			{ NULL,		NULL,		PREC_NONE },
+	[TOKEN_ELSE] =			{ NULL,		NULL,		PREC_NONE },
+	[TOKEN_FALSE] =			{ literal,	NULL,		PREC_NONE },
+	[TOKEN_FOR] =			{ NULL,		NULL,		PREC_NONE },
+	[TOKEN_FUN] =			{ NULL,		NULL,		PREC_NONE },
+	[TOKEN_IF] =			{ NULL,		NULL,		PREC_NONE },
+	[TOKEN_NULL] =			{ literal,	NULL,		PREC_NONE },
+	[TOKEN_OR] =			{ NULL,		or_,		PREC_OR },
+	[TOKEN_PRINT] =			{ NULL,		NULL,		PREC_NONE },
+	[TOKEN_RETURN] =		{ NULL,		NULL,		PREC_NONE },
+	[TOKEN_SUPER] =			{ NULL,		NULL,		PREC_NONE },
+	[TOKEN_THIS] =			{ NULL,		NULL,		PREC_NONE },
+	[TOKEN_TRUE] =			{ literal,	NULL,		PREC_NONE },
+	[TOKEN_VAR] =			{ NULL,		NULL,		PREC_NONE },
+	[TOKEN_WHILE] =			{ NULL,		NULL,		PREC_NONE },
+	[TOKEN_ERROR] =			{ NULL,		NULL,		PREC_NONE },
+	[TOKEN_EOF] =			{ NULL,		NULL,		PREC_NONE },
 };
 
 /**
@@ -925,6 +941,19 @@ static void funDeclaration()
 	defineVariable(global);
 }
 
+static void classDeclaration()
+{
+	consume(TOKEN_IDENTIFIER, "Expect class name.");
+	uint8_t nameConstant = identifierConstant(&parser.previous);
+	declareVariable();
+
+	emitBytes(OP_CLASS, nameConstant);
+	defineVariable(nameConstant);
+
+	consume(TOKEN_LEFT_BRACE, "Expect '{' before class body.");
+	consume(TOKEN_RIGHT_BRACE, "Expect '}' after class body.");
+}
+
 static void printStatement()
 {
 	expression();
@@ -973,22 +1002,22 @@ static void synchronize()
 
 	while (parser.current.type != TOKEN_EOF)
 	{
-		if (parser.previous.type == TOKEN_SEMICOLON) 
+		if (parser.previous.type == TOKEN_SEMICOLON)
 			return;
 		switch (parser.current.type)
 		{
-		case TOKEN_CLASS:
-		case TOKEN_FUN:
-		case TOKEN_VAR:
-		case TOKEN_FOR:
-		case TOKEN_IF:
-		case TOKEN_WHILE:
-		case TOKEN_PRINT:
-		case TOKEN_RETURN:
-			return;
+			case TOKEN_CLASS:
+			case TOKEN_FUN:
+			case TOKEN_VAR:
+			case TOKEN_FOR:
+			case TOKEN_IF:
+			case TOKEN_WHILE:
+			case TOKEN_PRINT:
+			case TOKEN_RETURN:
+				return;
 
-		default:
-			; // Do nothing.
+			default:
+				; // Do nothing.
 		}
 
 		advance();
@@ -997,7 +1026,11 @@ static void synchronize()
 
 static void declaration()
 {
-	if (match(TOKEN_FUN))
+	if (match(TOKEN_CLASS))
+	{
+		classDeclaration();
+	}
+	else if (match(TOKEN_FUN))
 	{
 		funDeclaration();
 	}

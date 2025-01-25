@@ -88,6 +88,12 @@ static void blackenObject(Obj* object)
 
 	switch (object->type)
 	{
+		case OBJ_CLASS:
+		{
+			ObjClass* klass = (ObjClass*)object;
+			markObject((Obj*)klass->name);
+			break;
+		}
 		case OBJ_CLOSURE:
 		{
 			ObjClosure* closure = (ObjClosure*)object;
@@ -96,6 +102,13 @@ static void blackenObject(Obj* object)
 			{
 				markObject((Obj*)closure->upvalues[i]);
 			}
+			break;
+		}
+		case OBJ_INSTANCE:
+		{
+			ObjInstance* instance = (ObjInstance*)object;
+			markObject((Obj*)instance->_class);
+			markTable(&instance->fields);
 			break;
 		}
 		case OBJ_FUNCTION:
@@ -114,26 +127,6 @@ static void blackenObject(Obj* object)
 	}
 }
 
-void collectGarbage()
-{
-#ifdef DEBUG_LOG_GC
-	printf("-- gc begin\n");
-	size_t before = vm.bytesAllocated;
-#endif
-
-	markRoots();
-	traceReferences();
-	tableRemoveWhite(&vm.strings);
-	sweep();
-
-	vm.nextGC = vm.bytesAllocated * GC_HEAP_GROW_FACTOR;
-
-#ifdef DEBUG_LOG_GC
-	printf("-- gc end\n");
-	printf("   collected %zu bytes (from %zu to %zu) next at %zu\n", before - vm.bytesAllocated, before, vm.bytesAllocated, vm.nextGC);
-#endif
-}
-
 static void freeObject(Obj* object)
 {
 #ifdef DEBUG_LOG_GC
@@ -141,6 +134,11 @@ static void freeObject(Obj* object)
 #endif
 	switch (object->type)
 	{
+		case OBJ_CLASS:
+		{
+			FREE(ObjClass, object);
+			break;
+		}
 		case OBJ_CLOSURE:
 		{
 			ObjClosure* closure = (ObjClosure*)object;
@@ -153,6 +151,13 @@ static void freeObject(Obj* object)
 			ObjFunction* function = (ObjFunction*)object;
 			freeChunk(&function->chunk);
 			FREE(ObjFunction, object);
+			break;
+		}
+		case OBJ_INSTANCE:
+		{
+			ObjInstance* instance = (ObjInstance*)object;
+			freeTable(&instance->fields);
+			FREE(ObjInstance, object);
 			break;
 		}
 		case OBJ_NATIVE:
@@ -240,4 +245,24 @@ static void sweep()
 			freeObject(unreached);
 		}
 	}
+}
+
+void collectGarbage()
+{
+#ifdef DEBUG_LOG_GC
+	printf("-- gc begin\n");
+	size_t before = vm.bytesAllocated;
+#endif
+
+	markRoots();
+	traceReferences();
+	tableRemoveWhite(&vm.strings);
+	sweep();
+
+	vm.nextGC = vm.bytesAllocated * GC_HEAP_GROW_FACTOR;
+
+#ifdef DEBUG_LOG_GC
+	printf("-- gc end\n");
+	printf("   collected %zu bytes (from %zu to %zu) next at %zu\n", before - vm.bytesAllocated, before, vm.bytesAllocated, vm.nextGC);
+#endif
 }
