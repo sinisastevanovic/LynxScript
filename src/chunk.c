@@ -94,7 +94,7 @@ int getLine(Chunk* chunk, int offset)
 void freeChunk(Chunk* chunk) 
 {
     FREE_ARRAY(uint8_t, chunk->code, chunk->capacity);
-    FREE_ARRAY(int, chunk->lines, chunk->capacity);
+    FREE_ARRAY(Line, chunk->lines, chunk->linesCapacity);
     freeValueArray(&chunk->constants);
     initChunk(chunk);
 }
