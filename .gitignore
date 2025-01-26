@@ -36,3 +36,4 @@ bin/
 *.exe
 *.pdb
 **/Debug/
+**/Release/
