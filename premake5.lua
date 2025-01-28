@@ -14,13 +14,15 @@ workspace "LynxScript"
         optimize "On"
 
 project "LynxScript"
-    kind "ConsoleApp"
+    --kind "ConsoleApp"
+    kind "StaticLib"
     language "C"
     cdialect "C99"
     architecture "x86_64"
 
-    targetdir "bin/%{cfg.buildcfg}"
+    --targetdir "bin/%{cfg.buildcfg}"
+    targetdir "lib/%{cfg.buildcfg}"
     objdir "bin-int/%{cfg.buildcfg}"
 
-    includedirs { "src" }
-    files { "src/**.h", "src/**.c" }
+    includedirs { "src", "include" }
+    files { "src/**.h", "src/**.c", "include/**.h", "include/**.hpp", "include/**.c" }

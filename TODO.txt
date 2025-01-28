@@ -1,0 +1,6 @@
+- support string maniputlation/interpolation: "${drink} will be ready in ${steep + cool} minutes."
+- add ternary operator
+- add arrays etc
+- implement all challenges
+- implement includes/imports
+- MultiArrayList: https://www.youtube.com/watch?v=IroPQ150F6c&list=WL&index=8
